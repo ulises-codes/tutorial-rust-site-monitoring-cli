@@ -23,8 +23,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: target/aarch64-apple-darwin
-      - name: Test
-        run: |
-          pwd
-          ls
-          ls target
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: ./target/aarch64-apple-darwin/release/site-monitor
