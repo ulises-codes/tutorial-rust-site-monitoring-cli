@@ -1,79 +1,129 @@
-name: Release
 on:
   push:
+  release:
+    types: [published]
+
+name: Build on Release
 
 jobs:
-  release_please:
-    name: Release Please
-    runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
+  build:
+    name: Mac ARM
+    runs-on: macos-latest
     steps:
-      - uses: google-github-actions/release-please-action@v3
-        id: release
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          release-type: rust
-          draft: true
-
-  github_build:
-    name: Build release binaries
-    needs: release_please
-    # if: ${{ needs.release_please.outputs.release_created == 'true' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: x86_64-apple-darwin
-            os: macOS-11
-            name: site-monitor-x86_64-apple-darwin.tar.gz
-
-          - target: aarch64-apple-darwin
-            os: macOS-11
-            name: site-monitor-aarch64-apple-darwin.tar.gz
-    runs-on: ${{ matrix.os }}
-    continue-on-error: true
-    steps:
-      - name: Setup | Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup | Rust
-        uses: dtolnay/rust-toolchain@master
+      - run: rustup target add aarch64-apple-darwin
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: ${{ matrix.target }}
-
-      - name: Post Build | Prepare artifacts [-nix]
-        run: |
-          cd target/${{ matrix.target }}/release
-          tar czvf ../../../${{ matrix.name }} site-monitor
-          cd -
-
-      - name: Release | Upload artifacts
-        uses: actions/upload-artifact@v3
+      - uses: actions-rs/cargo@v1
         with:
-          name: ${{ matrix.name }}
-          path: ${{ matrix.name }}
+          command: build
+          args: --release --target aarch64-apple-darwin
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: target/aarch64-apple-darwin
+
+  # mac_intel:
+  #   name: Mac Intel
+  #   runs-on: macos-latest
+  #   steps:
+  #     - run: rustup target add x86_64-apple-darwin
+  #     - uses: actions/checkout@v2
+  #     - uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
+  #     - uses: actions-rs/cargo@v1
+  #       with:
+  #         command: build
+  #         args: --release --target x86_64-apple-darwin
+  #     - uses: softprops/action-gh-release@v1
+  #       if: startsWith(github.ref, 'refs/tags/')
+  #       with:
+  #         files: target/aarch64-apple-darwin/release/site-monitor
 
   upload_artifacts:
     name: Add Build Artifacts to Release
-    needs: [release_please, github_build]
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
-      - name: Setup | Artifacts
-        uses: actions/download-artifact@v3
+      - name: Test
+        run: |
+          pwd
+          ls
+          ls target
+      # - name: Setup | Artifacts
+      #   uses: actions/download-artifact@v3
 
-      - name: Setup | Checksums
-        run: for file in site-monitor-*/site-monitor-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done
+      # - name: Setup | Checksums
+      #   run: for file in site-monitor-*/site-monitor-*; do openssl dgst -sha256 -r "$file" | awk '{print $1}' > "${file}.sha256"; done
 
-      - name: Setup | Publish Release
-        run: gh release edit ${{ needs.release_please.outputs.tag_name }} --draft=false --repo=site-monitor/site-monitor
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Setup | Publish Release
+      #   run: gh release edit ${{ needs.release_please.outputs.tag_name }} --draft=false --repo=site-monitor/site-monitor
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build | Add Artifacts to Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: site-monitor-*/site-monitor-*
-          tag_name: ${{ needs.release_please.outputs.tag_name }}
+      # - name: Build | Add Artifacts to Release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     files: site-monitor-*/site-monitor-*
+      #     tag_name: ${{ needs.release_please.outputs.tag_name }}
+
+# name: Release
+# on:
+#   push:
+
+# jobs:
+#   release_please:
+#     name: Release Please
+#     runs-on: ubuntu-latest
+#     outputs:
+#       release_created: ${{ steps.release.outputs.release_created }}
+#       tag_name: ${{ steps.release.outputs.tag_name }}
+#     steps:
+#       - uses: google-github-actions/release-please-action@v3
+#         id: release
+#         with:
+#           token: ${{ secrets.GITHUB_TOKEN }}
+#           release-type: rust
+#           draft: true
+
+#   github_build:
+#     name: Build release binaries
+#     needs: release_please
+#     # if: ${{ needs.release_please.outputs.release_created == 'true' }}
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         include:
+#           - target: x86_64-apple-darwin
+#             os: macOS-11
+#             name: site-monitor-x86_64-apple-darwin.tar.gz
+
+#           - target: aarch64-apple-darwin
+#             os: macOS-11
+#             name: site-monitor-aarch64-apple-darwin.tar.gz
+#     runs-on: ${{ matrix.os }}
+#     continue-on-error: true
+#     steps:
+#       - name: Setup | Checkout
+#         uses: actions/checkout@v2
+
+#       - name: Setup | Rust
+#         uses: dtolnay/rust-toolchain@master
+#         with:
+#           toolchain: stable
+#           target: ${{ matrix.target }}
+
+#       - name: Post Build | Prepare artifacts [-nix]
+#         run: |
+#           cd target/${{ matrix.target }}/release
+#           tar czvf ../../../${{ matrix.name }} site-monitor
+#           cd -
+
+#       - name: Release | Upload artifacts
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: ${{ matrix.name }}
+#           path: ${{ matrix.name }}
+
