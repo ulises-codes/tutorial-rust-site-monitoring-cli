@@ -1,4 +1,5 @@
-on: [release]
+on:
+  - release
 
 name: Build on Release
 
@@ -15,7 +16,6 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          use-cross: true
           command: build
           args: --target aarch64-apple-darwin
   mac_intel:
@@ -30,6 +30,5 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          use-cross: true
           command: build
           args: --target x86_64-apple-darwin
