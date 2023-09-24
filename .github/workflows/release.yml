@@ -1,14 +1,15 @@
 on:
-  - release
-  - push
+  release:
+    types: [published]
 
 name: Build on Release
 
 jobs:
   mac_arm:
     name: Mac ARM
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
+      - run: rustup target add aarch64-apple-darwin
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -19,7 +20,7 @@ jobs:
           args: --release --target aarch64-apple-darwin
   mac_intel:
     name: Mac Intel
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - run: rustup target add x86_64-apple-darwin
       - uses: actions/checkout@v2
