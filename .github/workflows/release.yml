@@ -18,6 +18,11 @@ jobs:
         with:
           command: build
           args: --release --target aarch64-apple-darwin
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: target/aarch64-apple-darwin
+
   mac_intel:
     name: Mac Intel
     runs-on: macos-latest
@@ -31,3 +36,7 @@ jobs:
         with:
           command: build
           args: --release --target x86_64-apple-darwin
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: target/aarch64-apple-darwin/release/site-monitor
