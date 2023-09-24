@@ -12,6 +12,10 @@ license = "MIT"
 name = "lib"
 path = "src/lib.rs"
 
+[[bin]]
+name = "site-monitor"
+path = "src/main.rs"
+
 [dependencies]
 clap = { version = "4.4.4", features = ["derive"] }
 log = "0.4.20"
